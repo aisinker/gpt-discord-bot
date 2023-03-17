@@ -43,7 +43,7 @@ async def generate_completion_response(
             header=Message(
                 "system", f"Instructions for {MY_BOT_NAME}: {BOT_INSTRUCTIONS}"
             ),
-            convo=Conversation(messages + [Message("assistant")]),
+            convo=Conversation(messages),
         )
         rendered = prompt.render()
         response = openai.ChatCompletion.create(
