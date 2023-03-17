@@ -1,5 +1,3 @@
-from ast import Constant
-from weakref import proxy
 import openai
 import discord
 from discord import Message as DiscordMessage
