@@ -1,7 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 import openai
-# from src.moderation import moderate_message
+from src.moderation import moderate_message
 from typing import Optional, List
 from src.constants import (
     BOT_INSTRUCTIONS,
@@ -46,7 +46,7 @@ async def generate_completion_response(
             convo=Conversation(messages),
         )
         rendered = prompt.render()
-        response = openai.ChatCompletion.create(
+        response = await openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",
             messages=rendered,
             temperature=1.0,
@@ -55,23 +55,23 @@ async def generate_completion_response(
             stop=["<|endoftext|>"],
         )
         reply = response.choices[0].message.content.strip()
-        # if reply:
-        #     flagged_str, blocked_str = moderate_message(
-        #         message=(rendered + reply)[-500:], user=user
-        #     )
-        #     if len(blocked_str) > 0:
-        #         return CompletionData(
-        #             status=CompletionResult.MODERATION_BLOCKED,
-        #             reply_text=reply,
-        #             status_text=f"from_response:{blocked_str}",
-        #         )
+        if reply:
+            flagged_str, blocked_str = await moderate_message(
+                message=reply, user=user
+            )
+            if len(blocked_str) > 0:
+                return CompletionData(
+                    status=CompletionResult.MODERATION_BLOCKED,
+                    reply_text=reply,
+                    status_text=f"from_response:{blocked_str}",
+                )
 
-        #     if len(flagged_str) > 0:
-        #         return CompletionData(
-        #             status=CompletionResult.MODERATION_FLAGGED,
-        #             reply_text=reply,
-        #             status_text=f"from_response:{flagged_str}",
-        #         )
+            if len(flagged_str) > 0:
+                return CompletionData(
+                    status=CompletionResult.MODERATION_FLAGGED,
+                    reply_text=reply,
+                    status_text=f"from_response:{flagged_str}",
+                )
 
         return CompletionData(
             status=CompletionResult.OK, reply_text=reply, status_text=None

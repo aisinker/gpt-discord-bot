@@ -1,3 +1,6 @@
+from ast import Constant
+from weakref import proxy
+import openai
 import discord
 from discord import Message as DiscordMessage
 import logging
@@ -5,10 +8,10 @@ from src.base import Message, Conversation
 from src.constants import (
     BOT_INVITE_URL,
     DISCORD_BOT_TOKEN,
-    # EXAMPLE_CONVOS,
     ACTIVATE_THREAD_PREFX,
     MAX_THREAD_MESSAGES,
     SECONDS_DELAY_RECEIVING_MSG,
+    OPENAI_API_KEY,
 )
 import asyncio
 from src.utils import (
@@ -33,7 +36,9 @@ logging.basicConfig(
 intents = discord.Intents.default()
 intents.message_content = True
 
-client = discord.Client(intents=intents)
+openai.api_key = OPENAI_API_KEY
+openai.proxy = "http://127.0.0.1:8088"
+client = discord.Client(intents=intents, proxy="http://127.0.0.1:8088")
 tree = discord.app_commands.CommandTree(client)
 
 
@@ -74,7 +79,7 @@ async def chat_command(int: discord.Interaction, message: str):
         logger.info(f"Chat command by {user} {message[:20]}")
         try:
             # moderate the message
-            flagged_str, blocked_str = moderate_message(message=message, user=user)
+            flagged_str, blocked_str = await moderate_message(message=message, user=user)
             await send_moderation_blocked_message(
                 guild=int.guild,
                 user=user,
@@ -178,7 +183,7 @@ async def on_message(message: DiscordMessage):
             return
 
         # moderate the message
-        flagged_str, blocked_str = moderate_message(
+        flagged_str, blocked_str = await moderate_message(
             message=message.content, user=message.author
         )
         await send_moderation_blocked_message(

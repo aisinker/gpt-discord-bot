@@ -9,12 +9,13 @@ import discord
 from src.utils import logger
 
 
-def moderate_message(
+async def moderate_message(
     message: str, user: str
 ) -> Tuple[str, str]:  # [flagged_str, blocked_str]
-    moderation_response = openai.Moderation.create(
+    moderation_response = openai.Moderation.acreate(
         input=message, model="text-moderation-latest"
     )
+    moderation_response = await moderation_response
     category_scores = moderation_response.results[0]["category_scores"] or {}
 
     blocked_str = ""
