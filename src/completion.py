@@ -41,7 +41,7 @@ async def generate_completion_response(
     try:
         prompt = Prompt(
             header=Message(
-                "System", f"Instructions for {MY_BOT_NAME}: {BOT_INSTRUCTIONS}"
+                "system", f"Instructions for {MY_BOT_NAME}: {BOT_INSTRUCTIONS}"
             ),
             convo=Conversation(messages + [Message(MY_BOT_NAME)]),
         )
