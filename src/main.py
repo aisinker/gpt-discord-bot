@@ -126,7 +126,7 @@ async def chat_command(int: discord.Interaction, message: str):
         )
         async with thread.typing():
             # fetch completion
-            messages = [Message(user=user.name, text=message)]
+            messages = [Message("assistant", text=message)]
             response_data = await generate_completion_response(
                 messages=messages, user=user
             )
