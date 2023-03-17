@@ -12,7 +12,11 @@ import discord
 from src.constants import MAX_CHARS_PER_REPLY_MSG, INACTIVATE_THREAD_PREFIX
 
 
-def discord_message_to_message(message: DiscordMessage) -> Optional[Message]:
+def discord_message_to_message(client: discord.Client, index: int, message: DiscordMessage) -> Optional[Message]:
+    role = "assistant" if message.author == client.user else "user"
+    if (index == 0):
+        role = "system"
+    # 
     if (
         message.type == discord.MessageType.thread_starter_message
         and message.reference.cached_message
@@ -21,10 +25,11 @@ def discord_message_to_message(message: DiscordMessage) -> Optional[Message]:
     ):
         field = message.reference.cached_message.embeds[0].fields[0]
         if field.value:
-            return Message("assistant", text=field.value)
+            return Message(role, content=field.value)
     else:
         if message.content:
-            return Message("assistant", text=message.content)
+            return Message(role, content=message.content)
+            
     return None
 
 

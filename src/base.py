@@ -7,13 +7,13 @@ SEPARATOR_TOKEN = "<|endoftext|>"
 
 @dataclass(frozen=True)
 class Message:
-    user: str
-    text: Optional[str] = None
+    role: str
+    content: str
     
-    def render(self):
+    def to_dict(self):
         return {
-            "role": self.user, 
-            "content": self.text
+            "role": self.role, 
+            "content": self.content
         }
 
 
@@ -26,7 +26,7 @@ class Conversation:
         return self
 
     def render(self):
-        return [message.render() for message in self.messages]
+        return [message.to_dict() for message in self.messages]
 
 
 @dataclass(frozen=True)
