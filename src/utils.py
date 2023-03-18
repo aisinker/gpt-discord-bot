@@ -1,42 +1,15 @@
-from src.constants import (
-    ALLOWED_SERVER_IDS,
-)
-import logging
-
-logger = logging.getLogger(__name__)
-from src.base import Message
-from discord import Message as DiscordMessage
-from typing import Optional, List
+import src.config as config
 import discord
-
-from src.constants import MAX_CHARS_PER_REPLY_MSG, INACTIVATE_THREAD_PREFIX
-
-
-def discord_message_to_message(client: discord.Client, index: int, message: DiscordMessage) -> Optional[Message]:
-    role = "assistant" if message.author == client.user else "user"
-    if (index == 0):
-        role = "system"
-    # 
-    if (
-        message.type == discord.MessageType.thread_starter_message
-        and message.reference.cached_message
-        and len(message.reference.cached_message.embeds) > 0
-        and len(message.reference.cached_message.embeds[0].fields) > 0
-    ):
-        field = message.reference.cached_message.embeds[0].fields[0]
-        if field.value:
-            return Message(role, content=field.value)
-    else:
-        if message.content:
-            return Message(role, content=message.content)
-            
-    return None
+from typing import Optional, List
+from discord import Message as DiscordMessage
+import logging
+logger = logging.getLogger(__name__)
 
 
 def split_into_shorter_messages(message: str) -> List[str]:
     return [
-        message[i : i + MAX_CHARS_PER_REPLY_MSG]
-        for i in range(0, len(message), MAX_CHARS_PER_REPLY_MSG)
+        message[i: i + config.MAX_CHARS_PER_REPLY_MSG]
+        for i in range(0, len(message), config.MAX_CHARS_PER_REPLY_MSG)
     ]
 
 
@@ -52,7 +25,7 @@ def is_last_message_stale(
 
 
 async def close_thread(thread: discord.Thread):
-    await thread.edit(name=INACTIVATE_THREAD_PREFIX)
+    await thread.edit(name=config.INACTIVATE_THREAD_PREFIX)
     await thread.send(
         embed=discord.Embed(
             description="**Thread closed** - Context limit reached, closing...",
@@ -68,7 +41,7 @@ def should_block(guild: Optional[discord.Guild]) -> bool:
         logger.info(f"DM not supported")
         return True
 
-    if guild.id and guild.id not in ALLOWED_SERVER_IDS:
+    if guild.id and guild.id not in config.ALLOWED_SERVER_IDS:
         # not allowed in this server
         logger.info(f"Guild {guild} not allowed")
         return True
