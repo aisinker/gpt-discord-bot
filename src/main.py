@@ -28,20 +28,10 @@ def discord_message_to_chat_message(client: discord.Client, index: int, message:
     if (index == 0):
         role = "system"
     #
-    if (
-        message.type == discord.MessageType.thread_starter_message
-        and message.reference.cached_message
-        and len(message.reference.cached_message.embeds) > 0
-        and len(message.reference.cached_message.embeds[0].fields) > 0
-    ):
-        field = message.reference.cached_message.embeds[0].fields[0]
-        if field.value:
-            return ChatMessage(role, content=field.value)
+    if message.content:
+        return ChatMessage(role, content=message.content)
     else:
-        if message.content:
-            return ChatMessage(role, content=message.content)
-
-    return None
+        return None
 
 
 async def process_response(
@@ -87,13 +77,13 @@ async def on_ready():
     await tree.sync()
 
 
-@tree.command(name="chat_with_prompt", description="Create a new thread for conversation")
+@tree.command(name="chat", description="Create a new private thread for conversation")
 @discord.app_commands.checks.has_permissions(send_messages=True)
 @discord.app_commands.checks.has_permissions(view_channel=True)
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
 @discord.app_commands.checks.bot_has_permissions(view_channel=True)
 @discord.app_commands.checks.bot_has_permissions(manage_threads=True)
-async def chat_with_prompt_command(interaction: discord.Interaction, prompt: str):
+async def chat_command(interaction: discord.Interaction, title: str):
     try:
         # only support creating thread in text channel
         if not isinstance(interaction.channel, discord.TextChannel):
@@ -104,35 +94,35 @@ async def chat_with_prompt_command(interaction: discord.Interaction, prompt: str
             return
 
         user = interaction.user
-        utils.logger.info(f"Chat with prompt '{prompt}' by {user}")
+        utils.logger.info(f"Chat command by by {user}")
+
+        # create thread
+        thread = await interaction.channel.create_thread(
+            name=f"{config.ACTIVATE_THREAD_PREFX} {user.name[:20]} {title[:20]}",
+            type=discord.ChannelType.private_thread,
+            reason="GPT-Bot",
+            slowmode_delay=1,
+        )
+        await thread.add_user(interaction.user)
+
+        #
         try:
             embed = discord.Embed(
-                description=f"<@{user.id}> wants to chat! 🤖💬",
+                description=f"<@{user.id}> The private thread has created!\nid: {thread.id}",
                 color=discord.Color.green(),
             )
-            embed.add_field(name=user.name, value=prompt)
-
             await interaction.response.send_message(embed=embed)
-            response = await interaction.original_response()
         except Exception as e:
             utils.logger.exception(e)
             await interaction.response.send_message(
-                f"Failed to start chat {str(e)}", ephemeral=True
+                f"Failed to create private thread {str(e)}", ephemeral=True
             )
             return
-
-        # create thread
-        await response.create_thread(
-            name=f"{config.ACTIVATE_THREAD_PREFX} {user.name[:20]} - {prompt[:30]}",
-            slowmode_delay=1,
-            reason="gpt-bot",
-            auto_archive_duration=60,
-        )
 
     except Exception as e:
         utils.logger.exception(e)
         await interaction.response.send_message(
-            f"Failed to start chat {str(e)}", ephemeral=True
+            f"Failed to create private thread {str(e)}", ephemeral=True
         )
 
 
@@ -190,6 +180,8 @@ async def on_message(message: DiscordMessage):
         chat_messages: List[Optional[ChatMessage]] = []
         index = 0
         async for message in thread.history(limit=config.MAX_THREAD_MESSAGES, oldest_first=True):
+            if (message.type != discord.MessageType.default):
+                continue
             chat_messages.append(discord_message_to_chat_message(
                 client=client, index=index, message=message))
             index += 1
@@ -200,7 +192,7 @@ async def on_message(message: DiscordMessage):
             utils.logger.info("===========chat messages start============")
             for chat_message in chat_messages:
                 utils.logger.info(chat_message)
-            utils.logger.info("===========chat messages end============")
+            utils.logger.info("===========chat messages end==============")
 
         # generate the response
         async with thread.typing():
