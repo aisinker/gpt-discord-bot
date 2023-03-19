@@ -23,15 +23,19 @@ client = discord.Client(intents=intents, proxy=config.HTTP_PROXY)
 tree = discord.app_commands.CommandTree(client)
 
 
-def discord_message_to_chat_message(client: discord.Client, index: int, message: DiscordMessage) -> Optional[ChatMessage]:
-    role = "assistant" if message.author == client.user else "user"
-    if (index == 0):
-        role = "system"
-    #
-    if message.content:
-        return ChatMessage(role, content=message.content)
-    else:
-        return None
+def discord_message_to_chat_message(client: discord.Client, message: DiscordMessage) -> Optional[ChatMessage]:
+    if (message.type == discord.MessageType.default):
+        if message.content:
+            role = "assistant" if message.author == client.user else "user"
+            return ChatMessage(role, content=message.content)
+        elif (message.embeds
+              and len(message.embeds) > 0
+              and len(message.embeds[0].fields) > 0):
+            field = message.embeds[0].fields[0]
+            if field.value:
+                return ChatMessage("system", content=field.value)
+
+    return None
 
 
 async def process_response(
@@ -83,7 +87,7 @@ async def on_ready():
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
 @discord.app_commands.checks.bot_has_permissions(view_channel=True)
 @discord.app_commands.checks.bot_has_permissions(manage_threads=True)
-async def chat_command(interaction: discord.Interaction, title: str):
+async def chat_command(interaction: discord.Interaction, title: str, prompt: str):
     try:
         # only support creating thread in text channel
         if not isinstance(interaction.channel, discord.TextChannel):
@@ -98,12 +102,20 @@ async def chat_command(interaction: discord.Interaction, title: str):
 
         # create thread
         thread = await interaction.channel.create_thread(
-            name=f"{config.ACTIVATE_THREAD_PREFX} {user.name[:20]} {title[:20]}",
+            name=f"{config.ACTIVATE_THREAD_PREFX} {title[:20]}",
             type=discord.ChannelType.private_thread,
             reason="GPT-Bot",
             slowmode_delay=1,
         )
         await thread.add_user(interaction.user)
+
+        #
+        embed = discord.Embed(
+            description=f"<@{user.id}>",
+            color=discord.Color.green(),
+        )
+        embed.add_field(name="Prompt:", value=prompt)
+        await thread.send(embed=embed)
 
         #
         try:
@@ -178,13 +190,9 @@ async def on_message(message: DiscordMessage):
         )
 
         chat_messages: List[Optional[ChatMessage]] = []
-        index = 0
         async for message in thread.history(limit=config.MAX_THREAD_MESSAGES, oldest_first=True):
-            if (message.type != discord.MessageType.default):
-                continue
             chat_messages.append(discord_message_to_chat_message(
-                client=client, index=index, message=message))
-            index += 1
+                client=client, message=message))
         chat_messages = [
             message for message in chat_messages if message is not None]
 
