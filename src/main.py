@@ -102,7 +102,7 @@ async def chat_command(interaction: discord.Interaction, title: str, prompt: str
 
         # create thread
         thread = await interaction.channel.create_thread(
-            name=f"{config.ACTIVATE_THREAD_PREFX} {title[:20]}",
+            name=f"{config.ACTIVATE_THREAD_PREFIX} {title[:20]}",
             type=discord.ChannelType.private_thread,
             reason="GPT-Bot",
             slowmode_delay=1,
@@ -164,7 +164,7 @@ async def on_message(message: DiscordMessage):
         if (
             thread.archived
             or thread.locked
-            or not thread.name.startswith(config.ACTIVATE_THREAD_PREFX)
+            or not thread.name.startswith(config.ACTIVATE_THREAD_PREFIX)
         ):
             # ignore this thread
             return

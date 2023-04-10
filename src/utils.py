@@ -25,7 +25,7 @@ def is_last_message_stale(
 
 
 async def close_thread(thread: discord.Thread):
-    await thread.edit(name=config.INACTIVATE_THREAD_PREFIX)
+    await thread.edit(name=thread.name.replace("✅", "❌"))
     await thread.send(
         embed=discord.Embed(
             description="**Thread closed** - Context limit reached, closing...",
