@@ -39,8 +39,6 @@ async def chat_completion(
             model="gpt-3.5-turbo",
             messages=[message.to_dict() for message in messages],
             temperature=1.0,
-            top_p=0.9,
-            max_tokens=4096,
             stop=["<|endoftext|>"],
         )
         reply = response.choices[0].message.content.strip()
