@@ -36,7 +36,7 @@ async def chat_completion(
 ) -> CompletionData:
     try:
         response = await openai.ChatCompletion.acreate(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[message.to_dict() for message in messages],
             temperature=1.0,
             stop=["<|endoftext|>"],
