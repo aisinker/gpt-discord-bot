@@ -87,7 +87,7 @@ async def on_ready():
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
 @discord.app_commands.checks.bot_has_permissions(view_channel=True)
 @discord.app_commands.checks.bot_has_permissions(manage_threads=True)
-async def chat_command(interaction: discord.Interaction, title: str, prompt: str = "You are a helpful assistant. Answer as concisely as possible."):
+async def chat_command(interaction: discord.Interaction, title: str, prompt: str = "You are a helpful assistant."):
     try:
         # only support creating thread in text channel
         if not isinstance(interaction.channel, discord.TextChannel):
